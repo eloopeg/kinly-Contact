@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kinly Contacts</title>
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f172a'/%3E%3Crect x='17' y='14' width='30' height='36' rx='4' fill='%2310b981'/%3E%3Crect x='13' y='20' width='6' height='5' rx='1.5' fill='%2310b981'/%3E%3Crect x='13' y='30' width='6' height='5' rx='1.5' fill='%2310b981'/%3E%3Crect x='13' y='40' width='6' height='5' rx='1.5' fill='%2310b981'/%3E%3Ccircle cx='32' cy='28' r='5' fill='%230f172a'/%3E%3Cpath d='M23 43c0-5 4-8 9-8s9 3 9 8z' fill='%230f172a'/%3E%3C/svg%3E">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+    }
+
+    .modal-overlay {
+      display: none;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 8px;
+    }
+
+    /* ---------- Responsive: table becomes stacked cards on small screens ---------- */
+    @media (max-width: 767px) {
+
+      table,
+      #contactTableBody {
+        display: block;
+        width: 100%;
+      }
+
+      table thead {
+        display: none;
+      }
+
+      #contactTableBody tr {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        padding: 12px 16px;
+        gap: 6px 12px;
+      }
+
+      #contactTableBody td {
+        display: block;
+        padding: 0 !important;
+      }
+
+      #contactTableBody td:nth-child(2) {
+        order: 1;
+        width: 100%;
+      }
+
+      #contactTableBody td:nth-child(3) {
+        order: 2;
+      }
+
+      #contactTableBody td:nth-child(4) {
+        order: 3;
+      }
+
+      #contactTableBody td:nth-child(5) {
+        order: 4;
+        margin-left: auto;
+        text-align: right;
+      }
+
+      #contactTableBody td:nth-child(1) {
+        order: 5;
+        width: 100%;
+        margin-top: 6px;
+        padding-top: 8px !important;
+        border-top: 1px solid #f1f5f9;
+      }
+
+      #contactTableBody td:nth-child(2) .text-xs {
+        word-break: break-all;
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-slate-100 min-h-screen text-slate-800 flex flex-col md:flex-row">
+
+  <!-- Sidebar -->
+  <aside class="w-full md:w-64 bg-slate-900 text-slate-300 md:min-h-screen flex flex-col shrink-0 pb-4 md:pb-0">
+    <div
+      class="px-4 md:px-6 py-4 md:py-6 text-xl font-extrabold text-white flex items-center gap-2 border-b border-slate-800">
+      <i class="fa-solid fa-address-book"></i> Kinly
+    </div>
+
+    <div class="px-4 pt-4 md:pt-5">
+      <button id="openAddBtn"
+        class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-900 px-4 py-2.5 rounded-lg font-bold text-sm shadow-sm transition">
+        + New Contact
+      </button>
+    </div>
+
+    <!-- Stats moved into sidebar -->
+    <div class="px-4 pt-4 md:pt-6 grid grid-cols-3 gap-2 md:block md:space-y-3 md:gap-0">
+      <div class="bg-slate-800 rounded-lg p-2.5 md:p-3.5 text-center md:text-left">
+        <div class="text-xl font-extrabold text-white" id="statTotal">0</div>
+        <div class="text-[10px] md:text-[11px] uppercase tracking-wide text-slate-400 mt-0.5">Total Contacts</div>
+      </div>
+      <div class="bg-slate-800 rounded-lg p-2.5 md:p-3.5 text-center md:text-left">
+        <div class="text-xl font-extrabold text-amber-400" id="statFav">0</div>
+        <div class="text-[10px] md:text-[11px] uppercase tracking-wide text-slate-400 mt-0.5">Favorites</div>
+      </div>
+      <div class="bg-slate-800 rounded-lg p-2.5 md:p-3.5 text-center md:text-left">
+        <div class="text-xl font-extrabold text-rose-400" id="statEmg">0</div>
+        <div class="text-[10px] md:text-[11px] uppercase tracking-wide text-slate-400 mt-0.5">Emergency</div>
+      </div>
+    </div>
+
+    <div class="hidden md:block mt-auto px-6 py-6 border-t border-slate-800 text-xs text-slate-500">
+      Data stored locally in your browser.
+    </div>
+  </aside>
+
+  <div class="flex-1 min-w-0 flex flex-col min-h-screen">
+
+    <!-- Topbar -->
+    <header
+      class="bg-white border-b border-slate-200 px-4 md:px-8 py-4 md:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+      <div>
+        <h1 class="text-xl font-bold" id="pageTitle">All Contacts</h1>
+        <p class="text-sm text-slate-500" id="pageSub">Manage your personal and professional connections</p>
+      </div>
+      <input id="searchInput" type="text" placeholder="Search by name or phone..."
+        class="w-full sm:max-w-sm px-3.5 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300">
+    </header>
+
+    <main class="flex-1 p-4 md:p-8">
+
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
+              <tr>
+                <th class="text-left px-5 py-3">Actions</th>
+                <th class="text-left px-5 py-3">Name</th>
+                <th class="text-left px-5 py-3">Flags</th>
+                <th class="text-left px-5 py-3">Group</th>
+                <th class="text-right px-5 py-3">Phone</th>
+              </tr>
+            </thead>
+            <tbody id="contactTableBody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+
+        <div id="emptyState" class="hidden text-center py-20 text-slate-400">
+          <div class="text-5xl mb-4"><i class="fa-solid fa-address-card"></i></div>
+          <p>No contacts yet. Click "New Contact" to get started.</p>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div class="modal-overlay fixed inset-0 bg-black/50 items-center justify-center z-50 p-4" id="contactModal">
+    <div class="bg-white rounded-xl w-full max-w-lg p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-5">
+        <h2 class="text-lg font-bold" id="modalTitle">Add New Contact</h2>
+        <button id="closeModalBtn" class="text-slate-400 hover:text-slate-700 text-xl leading-none"><i
+            class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="contactForm" class="space-y-4">
+        <input type="hidden" id="contactId">
+
+        <div>
+          <label class="block text-sm font-medium mb-1">Full Name <span class="text-rose-500">*</span></label>
+          <input id="fieldName" type="text" required minlength="2" maxlength="50" pattern="[A-Za-z؀-ۿ ]+"
+            class="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+            placeholder="e.g. Sara Ahmed">
+          <p class="text-xs text-rose-500 mt-1 hidden" id="errName">Name must be 2-50 letters only.</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">Phone Number <span class="text-rose-500">*</span></label>
+          <input id="fieldPhone" type="tel" required pattern="^01[0125][0-9]{8}$"
+            class="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+            placeholder="01xxxxxxxxx">
+          <p class="text-xs text-rose-500 mt-1 hidden" id="errPhone">Enter a valid Egyptian phone number.</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">Email Address</label>
+          <input id="fieldEmail" type="email"
+            class="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+            placeholder="name@example.com">
+          <p class="text-xs text-rose-500 mt-1 hidden" id="errEmail">Enter a valid email address.</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">Address</label>
+          <input id="fieldAddress" type="text"
+            class="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+            placeholder="Optional">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">Group</label>
+          <select id="fieldGroup"
+            class="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+            <option>Family</option>
+            <option>Friends</option>
+            <option>Work</option>
+            <option>School</option>
+            <option>Other</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">Notes</label>
+          <textarea id="fieldNotes" rows="2"
+            class="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+            placeholder="Optional"></textarea>
+        </div>
+
+        <div class="flex flex-wrap gap-x-6 gap-y-2">
+          <label class="flex items-center gap-2 text-sm">
+            <input id="fieldFavorite" type="checkbox" class="w-4 h-4 accent-amber-500"> <i
+              class="fa-solid fa-star text-amber-500"></i> Favorite
+          </label>
+          <label class="flex items-center gap-2 text-sm">
+            <input id="fieldEmergency" type="checkbox" class="w-4 h-4 accent-rose-500"> <i
+              class="fa-solid fa-truck-medical text-rose-500"></i> Emergency
+          </label>
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button type="button" id="cancelBtn"
+            class="flex-1 border border-slate-200 rounded-lg py-2.5 font-semibold text-sm hover:bg-slate-50">Cancel</button>
+          <button type="submit"
+            class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-slate-900 rounded-lg py-2.5 font-bold text-sm">Save
+            Contact</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete confirm modal -->
+  <div class="modal-overlay fixed inset-0 bg-black/50 items-center justify-center z-50 p-4" id="deleteModal">
+    <div class="bg-white rounded-xl w-full max-w-sm p-6 text-center">
+      <div class="text-4xl mb-3"><i class="fa-solid fa-trash-can text-rose-500"></i></div>
+      <h3 class="font-bold text-lg mb-2">Delete this contact?</h3>
+      <p class="text-slate-500 text-sm mb-6">This action can't be undone.</p>
+      <div class="flex gap-3">
+        <button id="cancelDeleteBtn"
+          class="flex-1 border border-slate-200 rounded-lg py-2.5 font-semibold text-sm hover:bg-slate-50">Cancel</button>
+        <button id="confirmDeleteBtn"
+          class="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg py-2.5 font-bold text-sm">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let contacts = JSON.parse(localStorage.getItem('contactvault') || '[]');
+    let searchTerm = '';
+    let pendingDeleteId = null;
+
+    const groupColors = {
+      Family: 'bg-teal-100 text-teal-700', Friends: 'bg-sky-100 text-sky-700',
+      Work: 'bg-violet-100 text-violet-700', School: 'bg-amber-100 text-amber-700',
+      Other: 'bg-slate-100 text-slate-700'
+    };
+
+    function save() { localStorage.setItem('contactvault', JSON.stringify(contacts)); }
+    function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+    function initials(name) {
+      return name.trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase()).join('');
+    }
+
+    function renderStats() {
+      document.getElementById('statTotal').textContent = contacts.length;
+      document.getElementById('statFav').textContent = contacts.filter(c => c.favorite).length;
+      document.getElementById('statEmg').textContent = contacts.filter(c => c.emergency).length;
+    }
+
+    function renderTable() {
+      let list = contacts;
+      if (searchTerm) {
+        const t = searchTerm.toLowerCase();
+        list = list.filter(c => c.name.toLowerCase().includes(t) || c.phone.includes(t));
+      }
+
+      const body = document.getElementById('contactTableBody');
+      const empty = document.getElementById('emptyState');
+      const table = document.querySelector('table');
+
+      if (list.length === 0) {
+        body.innerHTML = '';
+        table.classList.add('hidden');
+        empty.classList.remove('hidden');
+        return;
+      }
+      table.classList.remove('hidden');
+      empty.classList.add('hidden');
+
+      body.innerHTML = list.map(c => `
+    <tr class="hover:bg-slate-50">
+      <td class="px-5 py-3 space-x-2 whitespace-nowrap">
+        <button class="edit-btn text-emerald-600 hover:underline text-sm font-semibold" data-id="${c.id}">Edit</button>
+        <button class="del-btn text-rose-600 hover:underline text-sm font-semibold" data-id="${c.id}">Delete</button>
+      </td>
+      <td class="px-5 py-3">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs shrink-0">${initials(c.name)}</div>
+          <div>
+            <div class="font-semibold">${c.name}</div>
+            <div class="text-xs text-slate-400">${c.email || ''}</div>
+          </div>
+        </div>
+      </td>
+      <td class="px-5 py-3 text-base">
+        ${c.favorite ? '<i class="fa-solid fa-star text-amber-500"></i>' : ''} ${c.emergency ? '<i class="fa-solid fa-truck-medical text-rose-500"></i>' : ''}
+      </td>
+      <td class="px-5 py-3"><span class="text-xs px-2 py-0.5 rounded-full ${groupColors[c.group] || groupColors.Other}">${c.group}</span></td>
+      <td class="px-5 py-3 text-right text-slate-600">${c.phone}</td>
+    </tr>
+  `).join('');
+
+      body.querySelectorAll('.edit-btn').forEach(b => b.onclick = () => openEdit(b.dataset.id));
+      body.querySelectorAll('.del-btn').forEach(b => b.onclick = () => openDelete(b.dataset.id));
+    }
+
+    function renderAll() { renderStats(); renderTable(); }
+
+    document.getElementById('searchInput').addEventListener('input', e => {
+      searchTerm = e.target.value.trim();
+      renderTable();
+    });
+
+    // Modal open/close
+    const contactModal = document.getElementById('contactModal');
+    const form = document.getElementById('contactForm');
+
+    function resetForm() {
+      form.reset();
+      document.getElementById('contactId').value = '';
+      ['errName', 'errPhone', 'errEmail'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    }
+
+    document.getElementById('openAddBtn').onclick = () => {
+      resetForm();
+      document.getElementById('modalTitle').textContent = 'Add New Contact';
+      contactModal.classList.add('open');
+    };
+    document.getElementById('closeModalBtn').onclick = () => contactModal.classList.remove('open');
+    document.getElementById('cancelBtn').onclick = () => contactModal.classList.remove('open');
+
+    function openEdit(id) {
+      const c = contacts.find(x => x.id === id);
+      if (!c) return;
+      document.getElementById('modalTitle').textContent = 'Edit Contact';
+      document.getElementById('contactId').value = c.id;
+      document.getElementById('fieldName').value = c.name;
+      document.getElementById('fieldPhone').value = c.phone;
+      document.getElementById('fieldEmail').value = c.email || '';
+      document.getElementById('fieldAddress').value = c.address || '';
+      document.getElementById('fieldGroup').value = c.group;
+      document.getElementById('fieldNotes').value = c.notes || '';
+      document.getElementById('fieldFavorite').checked = !!c.favorite;
+      document.getElementById('fieldEmergency').checked = !!c.emergency;
+      contactModal.classList.add('open');
+    }
+
+    // Create / Update
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+
+      const name = document.getElementById('fieldName').value.trim();
+      const phone = document.getElementById('fieldPhone').value.trim();
+      const email = document.getElementById('fieldEmail').value.trim();
+
+      const nameOk = /^[A-Za-z؀-ۿ ]{2,50}$/.test(name);
+      const phoneOk = /^01[0125][0-9]{8}$/.test(phone);
+      const emailOk = email === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+      document.getElementById('errName').classList.toggle('hidden', nameOk);
+      document.getElementById('errPhone').classList.toggle('hidden', phoneOk);
+      document.getElementById('errEmail').classList.toggle('hidden', emailOk);
+
+      if (!nameOk || !phoneOk || !emailOk) return;
+
+      const id = document.getElementById('contactId').value;
+      const data = {
+        name, phone, email,
+        address: document.getElementById('fieldAddress').value.trim(),
+        group: document.getElementById('fieldGroup').value,
+        notes: document.getElementById('fieldNotes').value.trim(),
+        favorite: document.getElementById('fieldFavorite').checked,
+        emergency: document.getElementById('fieldEmergency').checked
+      };
+
+      if (id) {
+        const idx = contacts.findIndex(c => c.id === id);
+        contacts[idx] = { ...contacts[idx], ...data };
+      } else {
+        contacts.push({ id: uid(), ...data });
+      }
+
+      save();
+      contactModal.classList.remove('open');
+      renderAll();
+    });
+
+    // Delete
+    const deleteModal = document.getElementById('deleteModal');
+    function openDelete(id) {
+      pendingDeleteId = id;
+      deleteModal.classList.add('open');
+    }
+    document.getElementById('cancelDeleteBtn').onclick = () => {
+      pendingDeleteId = null;
+      deleteModal.classList.remove('open');
+    };
+    document.getElementById('confirmDeleteBtn').onclick = () => {
+      contacts = contacts.filter(c => c.id !== pendingDeleteId);
+      save();
+      pendingDeleteId = null;
+      deleteModal.classList.remove('open');
+      renderAll();
+    };
+
+    renderAll();
+  </script>
+</body>
+
+</html>
